@@ -1,4 +1,4 @@
-.PHONY: help phase1-install-cli phase1-install-sdk phase1-check firmware-build firmware-flash docker-build docker-up docker-check docker-down api-setup api-migrate api-test api-run api-smoke bridge-setup duel-create duel-join duel-status fly-whoami fly-deploy
+.PHONY: help phase1-install-cli phase1-install-sdk phase1-check firmware-build firmware-flash docker-build docker-up docker-check docker-down api-setup api-migrate api-test api-run api-smoke bridge-setup duel-create duel-join duel-status e2e-local fly-whoami fly-deploy
 
 API_BASE ?= http://localhost:8000
 PLAYER_A ?= alice
@@ -25,6 +25,7 @@ help:
 	@echo "  duel-create   - Create duel (API_BASE, PLAYER_A vars)"
 	@echo "  duel-join     - Join duel (API_BASE, DUEL_ID, PLAYER_B vars)"
 	@echo "  duel-status   - Fetch duel status (API_BASE, DUEL_ID vars)"
+	@echo "  e2e-local     - Run full local duel flow validation"
 	@echo "  fly-whoami    - Check Fly authentication status"
 	@echo "  fly-deploy    - Deploy API using api/fly.toml"
 
@@ -83,6 +84,9 @@ duel-join:
 
 duel-status:
 	@./scripts/duel_status.sh "$(API_BASE)" "$(DUEL_ID)"
+
+e2e-local:
+	@./scripts/e2e_local.sh
 
 fly-whoami:
 	@fly auth whoami

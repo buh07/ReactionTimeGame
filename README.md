@@ -108,3 +108,7 @@ make duel-join DUEL_ID=ABC123 PLAYER_B=bob
 Check duel status:
 
 make duel-status DUEL_ID=ABC123
+
+Run full local duel E2E check:
+
+make e2e-local
