@@ -94,3 +94,17 @@ make fly-whoami
 Deploy API (uses api/fly.toml):
 
 make fly-deploy
+
+## Duel mode helpers
+
+Create a duel:
+
+make duel-create PLAYER_A=alice
+
+Join a duel:
+
+make duel-join DUEL_ID=ABC123 PLAYER_B=bob
+
+Check duel status:
+
+make duel-status DUEL_ID=ABC123

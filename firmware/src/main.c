@@ -142,20 +142,57 @@ static void ble_thread(void *a, void *b, void *c)
     }
 }
 
-void main(void)
+int main(void)
 {
-    gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
-    gpio_pin_configure_dt(&btn, GPIO_INPUT);
-    gpio_pin_interrupt_configure_dt(&btn, GPIO_INT_EDGE_TO_ACTIVE);
+    int err;
+
+    err = gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
+    if (err) {
+        LOG_ERR("LED gpio init failed: %d", err);
+        return err;
+    }
+
+    err = gpio_pin_configure_dt(&btn, GPIO_INPUT);
+    if (err) {
+        LOG_ERR("Button gpio init failed: %d", err);
+        return err;
+    }
+
+    err = gpio_pin_interrupt_configure_dt(&btn, GPIO_INT_EDGE_TO_ACTIVE);
+    if (err) {
+        LOG_ERR("Button interrupt setup failed: %d", err);
+        return err;
+    }
+
     gpio_init_callback(&btn_cb, btn_pressed, BIT(btn.pin));
     gpio_add_callback(btn.port, &btn_cb);
 
-    bt_enable(NULL);
-    bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL, 0);
+    err = bt_enable(NULL);
+    if (err) {
+        LOG_ERR("bt_enable failed: %d", err);
+        return err;
+    }
+
+    err = bt_le_adv_start(
+        BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONN | BT_LE_ADV_OPT_USE_NAME,
+                        BT_GAP_ADV_FAST_INT_MIN_2,
+                        BT_GAP_ADV_FAST_INT_MAX_2,
+                        NULL),
+        ad,
+        ARRAY_SIZE(ad),
+        NULL,
+        0);
+    if (err) {
+        LOG_ERR("bt_le_adv_start failed: %d", err);
+        return err;
+    }
+
     LOG_INF("Advertising as \"%s\"", CONFIG_BT_DEVICE_NAME);
 
     k_thread_create(&game_thread_data, game_stack, GAME_STACK,
                     game_thread, NULL, NULL, NULL, GAME_PRIO, 0, K_NO_WAIT);
     k_thread_create(&ble_thread_data, ble_stack, BLE_STACK,
                     ble_thread, NULL, NULL, NULL, BLE_PRIO, 0, K_NO_WAIT);
+
+    return 0;
 }

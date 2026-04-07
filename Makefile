@@ -1,4 +1,9 @@
-.PHONY: help phase1-install-cli phase1-install-sdk phase1-check firmware-build firmware-flash docker-build docker-up docker-check docker-down api-setup api-migrate api-test api-run api-smoke bridge-setup fly-whoami fly-deploy
+.PHONY: help phase1-install-cli phase1-install-sdk phase1-check firmware-build firmware-flash docker-build docker-up docker-check docker-down api-setup api-migrate api-test api-run api-smoke bridge-setup duel-create duel-join duel-status fly-whoami fly-deploy
+
+API_BASE ?= http://localhost:8000
+PLAYER_A ?= alice
+PLAYER_B ?= bob
+DUEL_ID ?=
 
 help:
 	@echo "Targets:"
@@ -17,6 +22,9 @@ help:
 	@echo "  api-run       - Run API server on localhost:8000"
 	@echo "  api-smoke     - Execute local API smoke test flow"
 	@echo "  bridge-setup  - Create bridge/.venv and install dependencies"
+	@echo "  duel-create   - Create duel (API_BASE, PLAYER_A vars)"
+	@echo "  duel-join     - Join duel (API_BASE, DUEL_ID, PLAYER_B vars)"
+	@echo "  duel-status   - Fetch duel status (API_BASE, DUEL_ID vars)"
 	@echo "  fly-whoami    - Check Fly authentication status"
 	@echo "  fly-deploy    - Deploy API using api/fly.toml"
 
@@ -66,6 +74,15 @@ api-smoke:
 
 bridge-setup:
 	@cd bridge && /usr/local/bin/python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+
+duel-create:
+	@./scripts/duel_create.sh "$(API_BASE)" "$(PLAYER_A)"
+
+duel-join:
+	@./scripts/duel_join.sh "$(API_BASE)" "$(DUEL_ID)" "$(PLAYER_B)"
+
+duel-status:
+	@./scripts/duel_status.sh "$(API_BASE)" "$(DUEL_ID)"
 
 fly-whoami:
 	@fly auth whoami
