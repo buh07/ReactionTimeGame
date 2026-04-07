@@ -1,7 +1,9 @@
-.PHONY: help phase1-check api-setup api-migrate api-test api-run api-smoke bridge-setup
+.PHONY: help phase1-install-cli phase1-install-sdk phase1-check api-setup api-migrate api-test api-run api-smoke bridge-setup
 
 help:
 	@echo "Targets:"
+	@echo "  phase1-install-cli - Install nrfutil, west, and nRF command line tools"
+	@echo "  phase1-install-sdk - Install nRF Connect SDK (default v3.1.1)"
 	@echo "  phase1-check  - Check nRF/Zephyr CLI prerequisites"
 	@echo "  api-setup     - Create api/.venv and install dependencies"
 	@echo "  api-migrate   - Run Alembic upgrade head (sqlite app.db by default)"
@@ -9,6 +11,13 @@ help:
 	@echo "  api-run       - Run API server on localhost:8000"
 	@echo "  api-smoke     - Execute local API smoke test flow"
 	@echo "  bridge-setup  - Create bridge/.venv and install dependencies"
+
+
+phase1-install-cli:
+	@./firmware/install_cli_tools.sh
+
+phase1-install-sdk:
+	@./firmware/install_ncs_sdk.sh
 
 phase1-check:
 	@./firmware/check_phase1_prereqs.sh

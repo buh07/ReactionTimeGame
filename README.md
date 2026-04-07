@@ -33,6 +33,10 @@ Run:
 
 make phase1-check
 
+Install CLI tools:
+
+make phase1-install-cli
+
 If `nrfjprog` is missing on macOS, install Nordic command line tools manually:
 
 brew install --cask nordic-nrf-command-line-tools
@@ -44,5 +48,9 @@ This may request your local sudo password for the Segger J-Link package installe
 - `nrfutil` + `sdk-manager` are installed.
 - The sdk-manager install directory is configured to `/opt/nordic/ncs` as required by macOS policy.
 - Install a specific SDK version with:
+
+   make phase1-install-sdk
+
+or:
 
   nrfutil sdk-manager install v3.1.1
