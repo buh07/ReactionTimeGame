@@ -1,10 +1,12 @@
-.PHONY: help phase1-install-cli phase1-install-sdk phase1-check api-setup api-migrate api-test api-run api-smoke bridge-setup
+.PHONY: help phase1-install-cli phase1-install-sdk phase1-check firmware-build firmware-flash api-setup api-migrate api-test api-run api-smoke bridge-setup
 
 help:
 	@echo "Targets:"
 	@echo "  phase1-install-cli - Install nrfutil, west, and nRF command line tools"
 	@echo "  phase1-install-sdk - Install nRF Connect SDK (default v3.1.1)"
 	@echo "  phase1-check  - Check nRF/Zephyr CLI prerequisites"
+	@echo "  firmware-build - Build firmware for nrf52840dk/nrf52840"
+	@echo "  firmware-flash - Flash most recent firmware build"
 	@echo "  api-setup     - Create api/.venv and install dependencies"
 	@echo "  api-migrate   - Run Alembic upgrade head (sqlite app.db by default)"
 	@echo "  api-test      - Run API test suite"
@@ -21,6 +23,12 @@ phase1-install-sdk:
 
 phase1-check:
 	@./firmware/check_phase1_prereqs.sh
+
+firmware-build:
+	@./firmware/build_firmware.sh
+
+firmware-flash:
+	@./firmware/flash_firmware.sh
 
 api-setup:
 	@cd api && /usr/local/bin/python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt pytest httpx

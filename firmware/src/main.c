@@ -3,7 +3,6 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/device.h>
-#include <zephyr/drivers/counter.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -17,8 +16,6 @@ static const struct gpio_dt_spec btn = GPIO_DT_SPEC_GET(DT_ALIAS(sw0), gpios);
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
 static struct gpio_callback btn_cb;
 
-/* Timer / counter */
-static const struct device *counter_dev = DEVICE_DT_GET(DT_NODELABEL(timer0));
 static uint32_t start_ticks;
 static volatile bool waiting_for_press;
 
@@ -87,10 +84,8 @@ static void btn_pressed(const struct device *dev, struct gpio_callback *cb, uint
     }
     waiting_for_press = false;
 
-    uint32_t now;
-    counter_get_value(counter_dev, &now);
-    uint32_t freq = counter_get_frequency(counter_dev);
-    uint32_t elapsed_ms = (uint32_t)(((uint64_t)(now - start_ticks) * 1000U) / freq);
+    uint32_t now = k_uptime_get_32();
+    uint32_t elapsed_ms = now - start_ticks;
 
     LOG_INF("Reaction: %u ms", elapsed_ms);
     (void)k_msgq_put(&score_queue, &elapsed_ms, K_NO_WAIT);
@@ -113,7 +108,7 @@ static void game_thread(void *a, void *b, void *c)
         k_sleep(K_MSEC(1500 + (sys_rand32_get() % 3000U)));
 
         gpio_pin_set_dt(&led, 1);
-        counter_get_value(counter_dev, &start_ticks);
+        start_ticks = k_uptime_get_32();
         waiting_for_press = true;
         LOG_DBG("LED on - waiting for press");
 
@@ -154,8 +149,6 @@ void main(void)
     gpio_pin_interrupt_configure_dt(&btn, GPIO_INT_EDGE_TO_ACTIVE);
     gpio_init_callback(&btn_cb, btn_pressed, BIT(btn.pin));
     gpio_add_callback(btn.port, &btn_cb);
-
-    counter_start(counter_dev);
 
     bt_enable(NULL);
     bt_le_adv_start(BT_LE_ADV_CONN_NAME, ad, ARRAY_SIZE(ad), NULL, 0);

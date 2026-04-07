@@ -54,3 +54,15 @@ This may request your local sudo password for the Segger J-Link package installe
 or:
 
   nrfutil sdk-manager install v3.1.1
+
+## Firmware build/flash
+
+Build firmware (uses sdk-manager toolchain launch and handles spaces in path):
+
+make firmware-build
+
+Flash firmware (board must be connected):
+
+make firmware-flash
+
+If flashing fails with "Unable to find a board", connect the nRF52840 DK over USB and retry.
