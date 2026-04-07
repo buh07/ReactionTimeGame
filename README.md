@@ -66,3 +66,31 @@ Flash firmware (board must be connected):
 make firmware-flash
 
 If flashing fails with "Unable to find a board", connect the nRF52840 DK over USB and retry.
+
+## Docker stack
+
+Build and run the local stack:
+
+make docker-build
+make docker-up
+make docker-check
+
+Services:
+
+- API: [http://localhost:8000](http://localhost:8000)
+- Prometheus: [http://localhost:9090](http://localhost:9090)
+- Grafana: [http://localhost:3000](http://localhost:3000)
+
+Stop stack:
+
+make docker-down
+
+## Fly deploy
+
+Check login status:
+
+make fly-whoami
+
+Deploy API (uses api/fly.toml):
+
+make fly-deploy
