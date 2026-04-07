@@ -1,0 +1,10 @@
+build/
+__pycache__/
+.venv/
+*.pyc
+.west/
+.env
+*.db
+bridge/.env
+api/.env
+api/.pytest_cache/

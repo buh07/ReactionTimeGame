@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reaction Duel - Leaderboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: ui-monospace, "Cascadia Code", "Fira Mono", monospace;
+    background: #0d0f14;
+    color: #c8cdd8;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 640px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2rem; }
+  .logo { font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; color: #5a6070; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: #eef0f4; }
+  h1 span { color: #4ade80; }
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #4ade80;
+    margin-top: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .dot {
+    width: 6px;
+    height: 6px;
+    background: #4ade80;
+    border-radius: 50%;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  .stat { background: #161a22; border: 1px solid #1e2430; border-radius: 10px; padding: 14px 16px; }
+  .stat-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #3e4555; margin-bottom: 4px; }
+  .stat-value { font-size: 20px; font-weight: 700; color: #eef0f4; }
+  .stat-value span { font-size: 11px; font-weight: 400; color: #5a6070; }
+
+  .board { background: #161a22; border: 1px solid #1e2430; border-radius: 12px; overflow: hidden; }
+  .board-header {
+    display: grid;
+    grid-template-columns: 40px 1fr 120px 80px;
+    padding: 10px 20px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #3e4555;
+    border-bottom: 1px solid #1e2430;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 40px 1fr 120px 80px;
+    align-items: center;
+    padding: 13px 20px;
+    border-bottom: 1px solid #1a1e28;
+    transition: background 0.15s;
+  }
+  .row:last-child { border-bottom: none; }
+  .row:hover { background: #1c2130; }
+  .row.you { background: #0f1f15; border-left: 2px solid #4ade80; padding-left: 18px; }
+  .rank { font-size: 13px; font-weight: 700; color: #3e4555; }
+  .rank.gold { color: #f59e0b; }
+  .rank.silver { color: #94a3b8; }
+  .rank.bronze { color: #b45309; }
+  .player { font-size: 14px; font-weight: 600; color: #dde1ea; display: flex; align-items: center; gap: 8px; }
+  .you-tag {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: #163a20;
+    color: #4ade80;
+    border: 1px solid #1e5429;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .bar-bg { flex: 1; height: 4px; background: #1e2430; border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s cubic-bezier(.16,1,.3,1); }
+  .fast { background: #4ade80; }
+  .med { background: #34d399; }
+  .slow { background: #f59e0b; }
+  .time-val { font-size: 13px; font-weight: 700; color: #eef0f4; min-width: 56px; text-align: right; }
+  .time-unit { font-size: 10px; font-weight: 400; color: #5a6070; }
+  .attempts { font-size: 11px; color: #3e4555; text-align: right; }
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    font-size: 11px;
+    color: #3e4555;
+  }
+  .refresh-btn {
+    background: none;
+    border: 1px solid #1e2430;
+    color: #5a6070;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .refresh-btn:hover { border-color: #4ade80; color: #4ade80; }
+  .empty { padding: 2rem; text-align: center; color: #3e4555; font-size: 13px; }
+  .error { padding: 2rem; text-align: center; color: #f59e0b; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">nRF52840 - BLE</div>
+    <h1>Reaction <span>Duel</span></h1>
+    <div class="live-badge"><span class="dot"></span>live - refreshes every 5 s</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">World record</div>
+      <div class="stat-value" id="stat-record">- <span>ms</span></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Players</div>
+      <div class="stat-value" id="stat-players">-</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total attempts</div>
+      <div class="stat-value" id="stat-attempts">-</div>
+    </div>
+  </div>
+
+  <div class="board">
+    <div class="board-header">
+      <span>#</span><span>player</span><span>best time</span>
+      <span style="text-align:right">attempts</span>
+    </div>
+    <div id="rows"><div class="empty">Loading...</div></div>
+  </div>
+
+  <footer>
+    <span id="ts">-</span>
+    <button class="refresh-btn" onclick="load()">refresh</button>
+  </footer>
+</div>
+
+<script>
+  const YOU = {{ player | tojson }};
+
+  const MEDALS = ["1", "2", "3"];
+  const WORST = 500;
+
+  function barClass(ms) {
+    return ms < 250 ? "fast" : ms < 380 ? "med" : "slow";
+  }
+
+  function render(data) {
+    const container = document.getElementById("rows");
+    if (!data.length) {
+      container.innerHTML = '<div class="empty">No scores yet - press the button.</div>';
+      return;
+    }
+
+    const totalAttempts = data.reduce((s, r) => s + r.attempts, 0);
+    document.getElementById("stat-record").innerHTML = `${data[0].best_ms} <span>ms</span>`;
+    document.getElementById("stat-players").textContent = data.length;
+    document.getElementById("stat-attempts").textContent = totalAttempts;
+
+    container.innerHTML = data.map((r, i) => {
+      const pct = Math.min((r.best_ms / WORST) * 100, 100).toFixed(1);
+      const cls = barClass(r.best_ms);
+      const medal = i < 3 ? MEDALS[i] : null;
+      const rankCls = ["gold", "silver", "bronze"][i] || "";
+      const isYou = YOU && r.player === YOU;
+
+      return `
+        <div class="row${isYou ? " you" : ""}">
+          <div class="rank ${rankCls}">${medal || (i + 1)}</div>
+          <div class="player">
+            ${r.player}
+            ${isYou ? '<span class="you-tag">you</span>' : ""}
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-bg">
+              <div class="bar-fill ${cls}" style="width:${pct}%"></div>
+            </div>
+            <div class="time-val">${r.best_ms} <span class="time-unit">ms</span></div>
+          </div>
+          <div class="attempts">${r.attempts}</div>
+        </div>`;
+    }).join("");
+  }
+
+  async function load() {
+    try {
+      const res = await fetch("/leaderboard");
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      render(data);
+      document.getElementById("ts").textContent = "updated just now";
+    } catch (e) {
+      document.getElementById("rows").innerHTML =
+        `<div class="error">Could not reach API: ${e.message}</div>`;
+    }
+  }
+
+  load();
+  setInterval(load, 5000);
+
+  let age = 0;
+  setInterval(() => {
+    age += 5;
+    const el = document.getElementById("ts");
+    if (!el.textContent.includes("just")) {
+      return;
+    }
+    if (age >= 10) {
+      el.textContent = `updated ${age}s ago`;
+    }
+  }, 5000);
+</script>
+</body>
+</html>
