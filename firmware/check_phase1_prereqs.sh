@@ -23,13 +23,25 @@ check_cmd nrfjprog
 if command -v nrfjprog >/dev/null 2>&1; then
   echo
   echo "Connected board IDs from nrfjprog --ids:"
-  nrfjprog --ids || true
+  ids="$(nrfjprog --ids 2>/dev/null || true)"
+  if [[ -n "$ids" ]]; then
+    echo "$ids"
+  else
+    echo "[missing] No board IDs detected from nrfjprog"
+    missing=1
+  fi
+fi
+
+if command -v nrfutil >/dev/null 2>&1 && nrfutil list 2>/dev/null | grep -q '^device'; then
+  echo
+  echo "Connected devices from nrfutil device list:"
+  nrfutil device list --json-pretty || true
 fi
 
 echo
 if [[ "$missing" -eq 0 ]]; then
-  echo "All required CLIs are present."
+  echo "All required CLIs are present and at least one board is detected."
 else
-  echo "One or more CLIs are missing. Install missing tools and re-run."
+  echo "CLI and/or board detection checks failed. Fix issues and re-run."
   exit 1
 fi
