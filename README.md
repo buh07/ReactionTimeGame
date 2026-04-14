@@ -99,6 +99,10 @@ Current deployed app URL:
 
 - [https://reactiontimegame.fly.dev/leaderboard](https://reactiontimegame.fly.dev/leaderboard)
 
+If running with SQLite in production, keep a single Fly machine to avoid split state:
+
+fly scale count 1 -a reactiontimegame
+
 ## Duel mode helpers
 
 Create a duel:
