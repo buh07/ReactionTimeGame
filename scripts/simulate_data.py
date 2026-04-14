@@ -6,6 +6,7 @@ import argparse
 import csv
 import json
 import random
+import ssl
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,7 +16,13 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
-def api_request(api_base: str, method: str, path: str, payload: dict[str, Any] | None = None) -> Any:
+def api_request(
+    api_base: str,
+    method: str,
+    path: str,
+    payload: dict[str, Any] | None = None,
+    insecure_tls: bool = False,
+) -> Any:
     url = f"{api_base.rstrip('/')}{path}"
     data = None
     headers = {}
@@ -24,8 +31,9 @@ def api_request(api_base: str, method: str, path: str, payload: dict[str, Any] |
         headers["Content-Type"] = "application/json"
 
     req = Request(url=url, data=data, headers=headers, method=method)
+    context = ssl._create_unverified_context() if insecure_tls else None
     try:
-        with urlopen(req, timeout=10) as resp:
+        with urlopen(req, timeout=10, context=context) as resp:
             body = resp.read().decode("utf-8")
             if not body:
                 return None
@@ -39,11 +47,11 @@ def api_request(api_base: str, method: str, path: str, payload: dict[str, Any] |
         raise RuntimeError(f"Connection dropped {method} {path}: {exc}") from exc
 
 
-def wait_for_api(api_base: str, timeout_seconds: int) -> None:
+def wait_for_api(api_base: str, timeout_seconds: int, insecure_tls: bool = False) -> None:
     start = time.time()
     while time.time() - start < timeout_seconds:
         try:
-            api_request(api_base, "GET", "/leaderboard")
+            api_request(api_base, "GET", "/leaderboard", insecure_tls=insecure_tls)
             return
         except RuntimeError:
             time.sleep(1)
@@ -111,9 +119,11 @@ def run_simulation(
     attempts_per_player: int,
     seed: int,
     output_dir: Path,
+    wait_timeout_seconds: int,
+    insecure_tls: bool,
 ) -> dict[str, Any]:
     rng = random.Random(seed)
-    wait_for_api(api_base, timeout_seconds=30)
+    wait_for_api(api_base, timeout_seconds=wait_timeout_seconds, insecure_tls=insecure_tls)
 
     player_names = build_player_names(players)
     skill_by_player = {name: rng.randint(185, 390) for name in player_names}
@@ -125,7 +135,13 @@ def run_simulation(
     for _ in range(solo_scores):
         player = rng.choice(player_names)
         reaction = simulated_reaction_ms(rng, skill_by_player[player])
-        api_request(api_base, "POST", "/score", {"player": player, "reaction_ms": reaction})
+        api_request(
+            api_base,
+            "POST",
+            "/score",
+            {"player": player, "reaction_ms": reaction},
+            insecure_tls=insecure_tls,
+        )
         score_rows.append(
             {
                 "timestamp_utc": now_iso(),
@@ -138,9 +154,21 @@ def run_simulation(
 
     for _ in range(duels):
         player_a, player_b = rng.sample(player_names, 2)
-        duel = api_request(api_base, "POST", "/duel", {"player_a": player_a})
+        duel = api_request(
+            api_base,
+            "POST",
+            "/duel",
+            {"player_a": player_a},
+            insecure_tls=insecure_tls,
+        )
         duel_id = duel["id"]
-        api_request(api_base, "POST", f"/duel/{duel_id}/join", {"player_b": player_b})
+        api_request(
+            api_base,
+            "POST",
+            f"/duel/{duel_id}/join",
+            {"player_b": player_b},
+            insecure_tls=insecure_tls,
+        )
 
         a_scores: list[int] = []
         b_scores: list[int] = []
@@ -156,12 +184,14 @@ def run_simulation(
                 "POST",
                 "/score",
                 {"player": player_a, "reaction_ms": a_score, "duel_id": duel_id},
+                insecure_tls=insecure_tls,
             )
             api_request(
                 api_base,
                 "POST",
                 "/score",
                 {"player": player_b, "reaction_ms": b_score, "duel_id": duel_id},
+                insecure_tls=insecure_tls,
             )
 
             score_rows.append(
@@ -187,7 +217,12 @@ def run_simulation(
         best_b = min(b_scores)
         expected_winner = player_a if best_a <= best_b else player_b
 
-        duel_state = api_request(api_base, "GET", f"/duel/{duel_id}")
+        duel_state = api_request(
+            api_base,
+            "GET",
+            f"/duel/{duel_id}",
+            insecure_tls=insecure_tls,
+        )
         api_winner = duel_state.get("winner")
         duel_rows.append(
             {
@@ -202,7 +237,7 @@ def run_simulation(
             }
         )
 
-    leaderboard = api_request(api_base, "GET", "/leaderboard")
+    leaderboard = api_request(api_base, "GET", "/leaderboard", insecure_tls=insecure_tls)
     top10 = leaderboard[:10]
     winner_mismatches = [row for row in duel_rows if row["winner_match"] != "true"]
 
@@ -245,6 +280,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--attempts-per-player", type=int, default=3)
     parser.add_argument("--seed", type=int, default=20260414)
     parser.add_argument("--output-dir", default="simulated_data")
+    parser.add_argument("--wait-timeout", type=int, default=30)
+    parser.add_argument("--insecure", action="store_true", help="Disable TLS certificate verification")
     parser.add_argument(
         "--allow-winner-mismatch",
         action="store_true",
@@ -263,6 +300,8 @@ def main() -> int:
         attempts_per_player=args.attempts_per_player,
         seed=args.seed,
         output_dir=Path(args.output_dir),
+        wait_timeout_seconds=args.wait_timeout,
+        insecure_tls=args.insecure,
     )
 
     print("Simulation complete.")

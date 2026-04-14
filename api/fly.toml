@@ -1,4 +1,4 @@
-app = "reaction-duel-api"
+app = "reactiontimegame"
 primary_region = "iad"
 
 [build]

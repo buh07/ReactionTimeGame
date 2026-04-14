@@ -95,6 +95,10 @@ Deploy API (uses api/fly.toml):
 
 make fly-deploy
 
+Current deployed app URL:
+
+- [https://reactiontimegame.fly.dev/leaderboard](https://reactiontimegame.fly.dev/leaderboard)
+
 ## Duel mode helpers
 
 Create a duel:
@@ -122,6 +126,10 @@ make simulate-data
 Useful overrides:
 
 SIM_PLAYERS=24 SIM_SOLO_SCORES=600 SIM_DUELS=120 SIM_SEED=42 make simulate-data
+
+For slower endpoints or local TLS trust issues:
+
+SIM_WAIT_TIMEOUT=120 SIM_INSECURE=1 API_BASE=https://reactiontimegame.fly.dev make simulate-data
 
 Generated artifacts are written under simulated_data/:
 

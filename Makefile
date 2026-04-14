@@ -11,6 +11,8 @@ SIM_DUELS ?= 40
 SIM_ATTEMPTS_PER_PLAYER ?= 3
 SIM_SEED ?= 20260414
 SIM_OUTPUT_DIR ?= simulated_data
+SIM_WAIT_TIMEOUT ?= 30
+SIM_INSECURE ?= 0
 
 help:
 	@echo "Targets:"
@@ -30,6 +32,7 @@ help:
 	@echo "  api-smoke     - Execute local API smoke test flow"
 	@echo "  bridge-setup  - Create bridge/.venv and install dependencies"
 	@echo "  simulate-data - Post synthetic scores/duels and save CSV/JSON artifacts"
+	@echo "                 Vars: SIM_* (e.g., SIM_WAIT_TIMEOUT=120, SIM_INSECURE=1)"
 	@echo "  finish-simulated - Bring stack up, run checks, simulate data, run e2e"
 	@echo "  duel-create   - Create duel (API_BASE, PLAYER_A vars)"
 	@echo "  duel-join     - Join duel (API_BASE, DUEL_ID, PLAYER_B vars)"
@@ -96,6 +99,8 @@ simulate-data:
 		--duels "$(SIM_DUELS)" \
 		--attempts-per-player "$(SIM_ATTEMPTS_PER_PLAYER)" \
 		--seed "$(SIM_SEED)" \
+		--wait-timeout "$(SIM_WAIT_TIMEOUT)" \
+		$(if $(filter 1 true yes,$(SIM_INSECURE)),--insecure,) \
 		--output-dir "$(SIM_OUTPUT_DIR)"
 
 finish-simulated: docker-build docker-up docker-check simulate-data e2e-local
