@@ -112,3 +112,26 @@ make duel-status DUEL_ID=ABC123
 Run full local duel E2E check:
 
 make e2e-local
+
+## Synthetic data simulation
+
+Generate realistic synthetic solo and duel traffic against the API:
+
+make simulate-data
+
+Useful overrides:
+
+SIM_PLAYERS=24 SIM_SOLO_SCORES=600 SIM_DUELS=120 SIM_SEED=42 make simulate-data
+
+Generated artifacts are written under simulated_data/:
+
+- scores_*.csv
+- duels_*.csv
+- summary_*.json
+
+By default, the simulator exits with a non-zero status if duel winner mismatches are detected.
+This acts as a consistency check for duel winner update logic.
+
+Run full simulated completion flow (stack up + health checks + synthetic data + e2e):
+
+make finish-simulated

@@ -99,7 +99,8 @@ def _update_duel(duel_id: str, player: str, score_ms: int, db: Session) -> None:
     elif player == duel.player_b and (duel.score_b is None or score_ms < duel.score_b):
         duel.score_b = score_ms
 
-    if duel.score_a is not None and duel.score_b is not None and not duel.winner:
+    # Recompute winner whenever either best score improves.
+    if duel.score_a is not None and duel.score_b is not None:
         duel.winner = duel.player_a if duel.score_a <= duel.score_b else duel.player_b
 
     db.commit()

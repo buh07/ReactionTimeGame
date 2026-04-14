@@ -62,7 +62,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "rate(http_requests_total{app=\"reaction-duel\"}[1m])",
+          "expr": "sum(rate(http_requests_total[1m]))",
           "legendFormat": "request rate",
           "range": true,
           "refId": "A"

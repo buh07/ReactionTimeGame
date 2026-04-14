@@ -1,9 +1,16 @@
-.PHONY: help phase1-install-cli phase1-install-sdk phase1-check firmware-build firmware-flash docker-build docker-up docker-check docker-down api-setup api-migrate api-test api-run api-smoke bridge-setup duel-create duel-join duel-status e2e-local fly-whoami fly-deploy
+.PHONY: help phase1-install-cli phase1-install-sdk phase1-check firmware-build firmware-flash docker-build docker-up docker-check docker-down api-setup api-migrate api-test api-run api-smoke bridge-setup simulate-data finish-simulated duel-create duel-join duel-status e2e-local fly-whoami fly-deploy
 
 API_BASE ?= http://localhost:8000
 PLAYER_A ?= alice
 PLAYER_B ?= bob
 DUEL_ID ?=
+PYTHON ?= python3
+SIM_PLAYERS ?= 16
+SIM_SOLO_SCORES ?= 240
+SIM_DUELS ?= 40
+SIM_ATTEMPTS_PER_PLAYER ?= 3
+SIM_SEED ?= 20260414
+SIM_OUTPUT_DIR ?= simulated_data
 
 help:
 	@echo "Targets:"
@@ -22,6 +29,8 @@ help:
 	@echo "  api-run       - Run API server on localhost:8000"
 	@echo "  api-smoke     - Execute local API smoke test flow"
 	@echo "  bridge-setup  - Create bridge/.venv and install dependencies"
+	@echo "  simulate-data - Post synthetic scores/duels and save CSV/JSON artifacts"
+	@echo "  finish-simulated - Bring stack up, run checks, simulate data, run e2e"
 	@echo "  duel-create   - Create duel (API_BASE, PLAYER_A vars)"
 	@echo "  duel-join     - Join duel (API_BASE, DUEL_ID, PLAYER_B vars)"
 	@echo "  duel-status   - Fetch duel status (API_BASE, DUEL_ID vars)"
@@ -59,7 +68,8 @@ docker-down:
 	@docker compose down
 
 api-setup:
-	@cd api && /usr/local/bin/python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt pytest httpx
+	@command -v "$(PYTHON)" >/dev/null 2>&1 || { echo "Python executable '$(PYTHON)' not found in PATH"; exit 1; }
+	@cd api && "$(PYTHON)" -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt pytest httpx
 
 api-migrate:
 	@cd api && . .venv/bin/activate && export DATABASE_URL=$${DATABASE_URL:-sqlite:///./app.db} && alembic upgrade head
@@ -74,7 +84,22 @@ api-smoke:
 	@./scripts/api_smoke_test.sh
 
 bridge-setup:
-	@cd bridge && /usr/local/bin/python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+	@command -v "$(PYTHON)" >/dev/null 2>&1 || { echo "Python executable '$(PYTHON)' not found in PATH"; exit 1; }
+	@cd bridge && "$(PYTHON)" -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+
+simulate-data:
+	@command -v "$(PYTHON)" >/dev/null 2>&1 || { echo "Python executable '$(PYTHON)' not found in PATH"; exit 1; }
+	@"$(PYTHON)" ./scripts/simulate_data.py \
+		--api-base "$(API_BASE)" \
+		--players "$(SIM_PLAYERS)" \
+		--solo-scores "$(SIM_SOLO_SCORES)" \
+		--duels "$(SIM_DUELS)" \
+		--attempts-per-player "$(SIM_ATTEMPTS_PER_PLAYER)" \
+		--seed "$(SIM_SEED)" \
+		--output-dir "$(SIM_OUTPUT_DIR)"
+
+finish-simulated: docker-build docker-up docker-check simulate-data e2e-local
+	@echo "Simulated completion flow finished successfully."
 
 duel-create:
 	@./scripts/duel_create.sh "$(API_BASE)" "$(PLAYER_A)"

@@ -8,3 +8,5 @@ __pycache__/
 bridge/.env
 api/.env
 api/.pytest_cache/
+simulated_data/
+

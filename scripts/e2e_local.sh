@@ -7,14 +7,26 @@ PLAYER_A="${PLAYER_A:-alice}"
 PLAYER_B="${PLAYER_B:-bob}"
 SCORE_A="${SCORE_A:-220}"
 SCORE_B="${SCORE_B:-310}"
+WAIT_TIMEOUT="${WAIT_TIMEOUT:-60}"
+WAIT_INTERVAL=2
 
 echo "Waiting for API at ${API_BASE}..."
-for _ in {1..30}; do
+elapsed=0
+api_ready=0
+while [[ "${elapsed}" -lt "${WAIT_TIMEOUT}" ]]; do
   if curl -fsS "${API_BASE}/leaderboard" >/dev/null 2>&1; then
+    api_ready=1
     break
   fi
-  sleep 1
+  sleep "${WAIT_INTERVAL}"
+  elapsed=$((elapsed + WAIT_INTERVAL))
 done
+
+if [[ "${api_ready}" -ne 1 ]]; then
+  echo "ERROR: API did not become ready at ${API_BASE}/leaderboard within ${WAIT_TIMEOUT}s."
+  echo "Start the API first (for example: make api-run or docker compose up)."
+  exit 1
+fi
 
 echo "Creating duel for ${PLAYER_A}..."
 DUEL_JSON=$(curl -fsS -X POST "${API_BASE}/duel" \
